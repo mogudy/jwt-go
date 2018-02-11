@@ -3,7 +3,6 @@ package jwt
 import (
 	"crypto/subtle"
 	"fmt"
-	"time"
 )
 
 // For a type to be a Claims object, it must just have a Valid method that determines
@@ -36,8 +35,8 @@ func (c StandardClaims) Valid() error {
 	// The claims below are optional, by default, so if they are set to the
 	// default value in Go, let's not fail the verification for them.
 	if c.VerifyExpiresAt(now, false) == false {
-		delta := time.Unix(now, 0).Sub(time.Unix(c.ExpiresAt, 0))
-		vErr.Inner = fmt.Errorf("token is expired by %v", delta)
+		//delta := time.Unix(now, 0).Sub(time.Unix(c.ExpiresAt, 0))
+		vErr.Inner = fmt.Errorf("token is expired")
 		vErr.Errors |= ValidationErrorExpired
 	}
 
@@ -105,14 +104,23 @@ func verifyExp(exp int64, now int64, required bool) bool {
 	if exp == 0 {
 		return !required
 	}
-	return now <= exp
+	if exp > 2147483647 {
+		return now * 1000 <= exp
+	} else {
+		return now <= exp
+	}
 }
 
 func verifyIat(iat int64, now int64, required bool) bool {
+	fmt.Printf("iat:%d, now: %d\n",iat,now)
 	if iat == 0 {
 		return !required
 	}
-	return now >= iat
+	if iat > 2147483647 {
+		return (now+10) * 1000 >= iat
+	} else {
+		return now >= iat
+	}
 }
 
 func verifyIss(iss string, cmp string, required bool) bool {
@@ -130,5 +138,9 @@ func verifyNbf(nbf int64, now int64, required bool) bool {
 	if nbf == 0 {
 		return !required
 	}
-	return now >= nbf
+	if nbf > 2147483647 {
+		return now * 1000 >= nbf
+	} else {
+		return now >= nbf
+	}
 }
